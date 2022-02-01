@@ -1,0 +1,11 @@
+state.env
+session.yml
+session_read.yml
+.docker
+.cas
+.scone
+.bash_history
+config.json
+config.json-e
+sr.yml
+

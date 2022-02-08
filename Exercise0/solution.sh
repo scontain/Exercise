@@ -10,14 +10,11 @@ trap 'echo "COMMAND \"${last_command}\" FAILED."' EXIT
 export BASHRC="$HOME/.bashrc"
 export ALIAS="$HOME/.scone/alias"
 
+
 function add_alias {
-    echo "File $BASHRC does not define alias scone. Adding now."
-
+    echo "File $1 does not define alias scone. Adding now."
 # append alias at the end of bashrc - assuming there is no early exit from bashrc (i.e., exits by executing last line of script)
-
-    cat "$ALIAS" >> "$BASHRC"
-    source "$BASHRC"
-    type -a scone
+    cat "$ALIAS" >> "$1"
 }
 
 # make sure this script is idempotent
@@ -40,15 +37,8 @@ EOF
 
 echo "Checking if file $BASHRC defines alias 'scone'."
 
-# undefine scone - to check if it is defined in BASHRC
-unalias scone 2> /dev/null || true
-
-# read bashrc - to check if bashrc defines it directly or indirectly..
-shopt -s expand_aliases
-source "$BASHRC"
-
 # check if alias exists - add to bashrc if it does not
 
-type -a scone || add_alias
+grep "alias scone" "$BASHRC" || add_alias "$BASHRC"
 
 trap 'echo OK.' EXIT

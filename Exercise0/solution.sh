@@ -7,19 +7,26 @@ trap 'echo "COMMAND \"${last_command}\" FAILED."' EXIT
 
 # We want to add alias scone to file .bashrc in home directory
 
-BASHRC="$HOME/.bashrc"
+export BASHRC="$HOME/.bashrc"
+export ALIAS="$HOME/.scone/alias"
 
 function add_alias {
     echo "File $BASHRC does not define alias scone. Adding now."
 
-    # append alias at the end of bashrc - assuming there is no early exit from bashrc (i.e., exits by executing last line of script)
+# append alias at the end of bashrc - assuming there is no early exit from bashrc (i.e., exits by executing last line of script)
 
-    mkdir -p "$HOME/.cas"
-    touch "$HOME/.cas/config.json"
-    mkdir -p $HOME/.scone
-    touch "$HOME/.scone/state.env"
-    cat >> "$BASHRC" <<EOF
+    cat "$ALIAS" >> "$BASHRC"
+    source "$BASHRC"
+    type -a scone
+}
 
+# make sure this script is idempotent
+
+mkdir -p "$HOME/.cas"
+touch "$HOME/.cas/config.json"
+mkdir -p $HOME/.scone
+touch "$HOME/.scone/state.env"
+cat > "$ALIAS" <<EOF
 # Created by 'SCONE add_alias' on $(date)
 alias scone="docker run -it --rm \
     -v /var/run/docker.sock:/var/run/docker.sock \
@@ -30,9 +37,6 @@ alias scone="docker run -it --rm \
     -w /root \
     registry.scontain.com:5050/community/cli scone"
 EOF
-    source "$BASHRC"
-    type -a scone
-}
 
 echo "Checking if file $BASHRC defines alias 'scone'."
 

@@ -4,7 +4,7 @@
 #
 
 # Exit on error and indicate which command caused this error exit
-set -e 
+set -e
 trap 'second_last=$last_command; last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 trap 'echo "COMMAND \"${last_command}\" (or \"${second_last}\") FAILED."' EXIT
 
@@ -18,10 +18,13 @@ function error {
     exit 1
 }
 
+#
 # define "scone" alias .. needs to be defined before any functions that might use this alias
-BASHRC="$HOME/.bashrc"
-source "$BASHRC"
+#
+
 shopt -s expand_aliases
+export ALIAS="$HOME/.scone/alias"
+source "$ALIAS"
 type -a scone || error "alias 'scone' undefined. Please add this to your .bashrc first."
 
 # Let us attest CAS

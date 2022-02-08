@@ -21,13 +21,14 @@ function error {
     exit 1
 }
 
+
 #
 # define "scone" alias .. needs to be defined before any functions that might use this alias
 #
 
-BASHRC="$HOME/.bashrc"
-source "$BASHRC"
 shopt -s expand_aliases
+export ALIAS="$HOME/.scone/alias"
+source "$ALIAS"
 type -a scone || error "alias 'scone' undefined. Please add this to your .bashrc first."
 
 #

@@ -27,11 +27,12 @@ function error {
 # define "scone" alias .. needs to be defined before any functions that might use this alias
 #
 
-BASHRC="$HOME/.bashrc"
-source "$BASHRC"
-unset SESSION_HASH
 shopt -s expand_aliases
+export ALIAS="$HOME/.scone/alias"
+source "$ALIAS"
 type -a scone || error "alias 'scone' undefined. Please add this to your .bashrc first."
+
+unset SESSION_HASH
 
 #
 # create session
@@ -54,7 +55,7 @@ secrets:
     kind: ascii
     value: "007"
 EOF
-    scone session check session.yml || error "Session seems to be incorrect"
+    scone session check session.yml || error "Session seems to be incorrect"
     export SESSION_HASH=`scone session create session.yml || error "Error creating session $SESSION - maybe, session already exists?"` 
     echo "created session $SESSION with hash $SESSION_HASH"
 }

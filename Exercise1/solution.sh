@@ -34,18 +34,18 @@ type -a scone || error "alias 'scone' undefined. Please add this to your .bashrc
 
 CAS_MRENCLAVE=$(curl https://sconedocs.github.io/public-CAS/ | grep "scone cas attest" | tail -1 | awk '{ print $9 }')
 echo "Extracted MRENCLAVE of CAS from website 'sconedocs.github.io': $CAS_MRENCLAVE"
-scone cas attest -G  --mrenclave $CAS_MRENCLAVE  --only_for_testing-ignore-signer --only_for_testing-debug scone-cas.cf || error "Attestation of CAS failed!"
+scone cas attest -G  --mrenclave $CAS_MRENCLAVE  --only_for_testing-ignore-signer --only_for_testing-debug scone-cas.cf || error "Attestation of CAS failed!"
 
 # Let us extract the cas certificate
 
 scone cas show-certificate > cas_cert.crt
 
-# Retrieving public value from $CAS_ADDR
+# Retrieving public value from scone-cas.cf
 
 export session_name="example_session"
 export value_name="example_value"
 
-curl --cacert  cas_cert.crt  --connect-to cas:8081:$CAS_ADDR:8081 https://cas:8081/v1/values/session=${session_name},secret=${value_name} > values.json
+curl --cacert  cas_cert.crt  --connect-to cas:8081:scone-cas.cf:8081 https://cas:8081/v1/values/session=${session_name},secret=${value_name} > values.json
 
 export VALUE=$( cat values.json | jq .value | tr -d '"')
 

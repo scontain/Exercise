@@ -20,9 +20,8 @@ function add_alias {
 # make sure this script is idempotent
 
 mkdir -p "$HOME/.cas"
-touch "$HOME/.cas/config.json"
 mkdir -p $HOME/.scone
-touch "$HOME/.scone/state.env"
+touch "$HOME/.scone/state.env" || echo "Warning: cannot touch $HOME/.scone/state.env"
 cat > "$ALIAS" <<EOF
 # Created by 'SCONE add_alias' on $(date)
 alias scone="docker run -it --rm \

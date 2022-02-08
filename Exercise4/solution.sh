@@ -75,11 +75,11 @@ EOF
 # check if we have the correct hash value 
 #
 
-echo "- Retrieving the name of the namespace from excercise 2"
+echo "- Retrieving the name of the namespace from excercise 3"
 
 unset NS
 unset SESSION_HASH
-source ./state.env
+source ../Exercise3/state.env
 
 if [[ "$NS" == "" ]] ; then 
     error "No namespace defined"

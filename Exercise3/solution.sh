@@ -53,7 +53,7 @@ echo "- Retrieving session of namespace $NS"
 
 scone session read "$NS" > session_read.yml || error "Namespace $NS does not exist - or we do not have access. Try to execute exercise 2 again."
 
-export COMPUTED_NAMESPACE_HASH=$(scone session verify session_read.yml | tr -d '\n' | tr -d '\r') || error "Error when retrieving the hash of the session $NS."
+export COMPUTED_NAMESPACE_HASH=$(scone session verify session_read.yml | tr -d '[:space:]') || error "Error when retrieving the hash of the session $NS."
 
 #
 # check if we have the correct hash value 

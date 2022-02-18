@@ -36,7 +36,7 @@ type -a scone || error "alias 'scone' undefined. Please add this to your .bashrc
 #
 
 function create_session {
-    echo "  => namespace $NA does not seem to exist. Need to create."
+    echo "  => namespace $NS does not seem to exist. Need to create."
     echo "- Creating session for namespace $NS"
 
     cat > session.yml <<EOF

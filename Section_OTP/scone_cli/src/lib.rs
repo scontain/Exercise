@@ -4,9 +4,12 @@ use serde::{Deserialize, Serialize};
 use handlebars::Handlebars;
 use shells::{sh};
 use std::fs::OpenOptions;
+use rand::{thread_rng, Rng};
+use rand::distributions::Alphanumeric;
+use std::fs;
 
 pub fn execute_with_docker(shell: &str, cmd: &String) -> (i32, String, String) {
-    let w_prefix = &format!(r#"docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "/Users/christoffetzer/.docker:/root/.docker" -v "/Users/christoffetzer/.cas:/root/.cas" -v "/Users/christoffetzer/.scone:/root/.scone" -v "/Users/christoffetzer/GIT/Scontain/EXAMPLES/B-Exercise-1:/root"     -w /root     registry.scontain.com:5050/sconecuratedimages/sconecli {}"#, cmd);
+    let w_prefix = &format!(r#"docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$HOME/.docker:/root/.docker" -v "$HOME/.cas:/root/.cas" -v "$HOME/.scone:/root/.scone" -v "$PWD:/root"     -w /root     registry.scontain.com:5050/sconecuratedimages/sconecli {}"#, cmd);
     let mut command = {
         let mut command = ::std::process::Command::new(shell);
         command.arg("-c").arg(w_prefix);
@@ -129,12 +132,10 @@ pub trait Init {
     fn new() -> Self;
 }
 
-use std::fs;
-
 pub fn write_state<T: Serialize>(state : &T, filename : &str) -> () {
     let state = serde_json::to_string_pretty(&state).expect("Error serializing internal state");
     info!("writing state {}", state);
-    fs::write(filename, state).expect("Unable to write file 'state.js'");
+    fs::write(filename, state).expect(&format!("Unable to write file '{}'", filename));
 }
 
 pub fn read_state<T: Init + for<'de> Deserialize<'de>>(filename : &str) -> T {
@@ -143,6 +144,16 @@ pub fn read_state<T: Init + for<'de> Deserialize<'de>>(filename : &str) -> T {
         let state : T  = serde_json::from_str(&state).expect(&format!("Cannot deserialize '{}'", filename));
         state
     } else {
+        info!("Failed to read state from file {}: creating this file now.", filename);
         T::new()
     }
+}
+
+pub fn random_name(len : usize) -> String {
+    let rand_string: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(len)
+        .map(char::from)
+        .collect();
+    rand_string
 }

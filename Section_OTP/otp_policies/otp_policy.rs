@@ -97,6 +97,9 @@ enum Commands {
 
     #[structopt(about = "Add a new authenticator. This asks you for the current OTP.")]
     AddAuthenticator {
+        #[clap(long)]
+        ootp: Option<String>,
+
         #[clap(flatten)]
         verbose: Verbosity<ErrorLevel>,
     },
@@ -122,7 +125,7 @@ fn main() {
     let cmd = Commands::parse();
     match cmd {
         Commands::Create{ force, verbose } => { init_logger(verbose); create_command(force) },
-        Commands::AddAuthenticator{ verbose } => { init_logger(verbose); add_authenticator() },
+        Commands::AddAuthenticator{ ootp, verbose } => { init_logger(verbose); add_authenticator(ootp) },
         Commands::GenQRCode{ verbose } => { init_logger(verbose); gen_qr_code() },
         Commands::RollForward{ force, verbose } => { init_logger(verbose); roll_forward(force) },
     }
@@ -309,22 +312,27 @@ access_policy:
     write_state(&state, "state.js");
 }
 
-fn add_authenticator() {
+fn add_authenticator(ootp: Option<String>) {
     let state : State = read_state("state.js"); // default: provide init state
 
-    let prompt = r#"
-Adding a new authenticate requires an OTP from an existing authenticator.
-    - The new QR code is written to file 'qrcode.svg'
-    - Starting containers can take some while. Hence, wait for a new QR code to appear on your authenticator.
-Type OTP and press enter: "#;
+    let otp = if let Some(otp) = ootp {
+        otp
+    } else {
+        let prompt = r#"
+    Adding a new authenticate requires an OTP from an existing authenticator.
+        - The new QR code is written to file 'qrcode.svg'
+        - Starting containers can take some while. Hence, wait for a new QR code to appear on your authenticator.
+    Type OTP and press enter: "#;
 
-    print!("{}", prompt);
+        print!("{}", prompt);
 
-    // get OTP from user
-    io::stdout().flush().unwrap();
-    let mut otp = String::new();
-    io::stdin().read_line(&mut otp).expect("Error getting OTP");
-    otp.retain(|c| !c.is_whitespace());
+        // get OTP from user
+        io::stdout().flush().unwrap();
+        let mut otp = String::new();
+        io::stdin().read_line(&mut otp).expect("Error getting OTP");
+        otp.retain(|c| !c.is_whitespace());
+        otp
+    };
 
     info!("Got OTP {}", otp);
     let (code, stdout, stderr) = sh!(r#"docker run --rm -w "/root" -v "$PWD:/root" -e "SCONE_CAS_ADDR=scone-cas.cf" -e "SCONE_CONFIG_ID={}/otpqr@{}" otpqr:scone /bin/otpqr > qr.output"#, state.session2, otp);
@@ -332,6 +340,6 @@ Type OTP and press enter: "#;
     if code != 0 {
         error!("ERROR: executing '/bin/otpqr.rs'. Code: {}\nError output:\n{}", code, stderr);
     } else {
-        println!("Please run command 'gen-qr-code' to get the new QR code.")
+        println!("Written QR code to file qrcode.svg.\n 1. Please 'open qrcode.svg' and scan qr code to initialize your authentication.\n 2. Remove qrcode.svg using: 'shred -n 3 -z -u qrcode.svg'\n")
     }
 }

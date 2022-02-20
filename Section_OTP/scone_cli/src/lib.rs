@@ -46,12 +46,14 @@ pub fn create_session<'a, T : Serialize + for<'de> Deserialize<'de>>(name : &Str
         // - we can access fields without needing to traits... but more importantly, this enables to create session for different fields
         let mut j : Value = serde_json::from_str(&serde_json::to_string_pretty(&state).expect("Error serializing internal state")).unwrap();
 
-        let (code,stdout, stderr) = scone!("scone session read {} > tmp_read_session.yml", name);
+        let tmp_name = random_name(20);
+        let (code,stdout, stderr) = scone!("scone session read {} > {}", name, tmp_name);
         let mut do_create = force; // create session, if force is set
         let mut r = Err("Incorrect code");
         if code == 0 {
             info!("Got session {} .. verifying session now ", name);
-            let (code,stdout, stderr) = scone!("scone session verify tmp_read_session.yml");
+            let (code,stdout, stderr) = scone!("scone session verify {}", tmp_name);
+            let _ = fs::remove_file(tmp_name);
             if code == 0 {
                 info!("OK: verified  session {}", name);
                 j["predecessor_key"] = "predecessor".into();
@@ -62,6 +64,7 @@ pub fn create_session<'a, T : Serialize + for<'de> Deserialize<'de>>(name : &Str
             }
             r = Ok(stdout);
         } else {
+            let _ = fs::remove_file(tmp_name);
             do_create = true; // create session, if we cannot read session - might not yet exist
             info!("Reading of session {} failed! Trying to create session. {} {}", name, stdout, stderr);
             j["predecessor_key"] = "#".into();
@@ -70,25 +73,29 @@ pub fn create_session<'a, T : Serialize + for<'de> Deserialize<'de>>(name : &Str
         if do_create {
             let mut reg = Handlebars::new();
             reg.set_strict_mode(true);
-            let filename = "tmp_rendered.yml";
-            let f = OpenOptions::new().write(true).truncate(true).create(true).open(filename).expect("Unable to open file");
+            let filename = random_name(20);
+            {
+                let f = OpenOptions::new().write(true).truncate(true).create(true).open(&filename).expect("Unable to open file");
 
-            // create session from session template and check if correct
-            let _rendered = reg.render_template_to_write(template, &j, f).expect("error rendering template");
-            let (code, _stdout, stderr) = scone!("scone session check {}", filename);
+                // create session from session template and check if correct
+                let _rendered = reg.render_template_to_write(template, &j, f).expect("error rendering template");
+            }
+            let (code, _stdout, stderr) = scone!("scone session check {}", &filename);
             if code != 0 {
-                error!("Session {}: description in '{}' contains errors: {}", filename, name, stderr);
+                error!("Session {}: description in '{}' contains errors: {}", &filename, name, stderr);
+                let _ = fs::remove_file(&filename);
                 return Err("Session template seems to be incorrect");
             }
             info!("Session template for {}: is correct.", name);
 
             // try to create / update the session
-            let (code,stdout, stderr) = scone!("scone session create {}", filename);
+            let (code,stdout, stderr) = scone!("scone session create {}", &filename);
+            let _ = fs::remove_file(&filename);
             if code == 0 {
                 info!("Created session {}: {}", name, stdout);
                 r = Ok(stdout);
             } else {
-                info!("Creation of session {} failed: {} - see file {}", name, stderr, filename);
+                info!("Creation of session {} failed: {} - see file {}", name, stderr, &filename);
                 r = Err("failed to create session.")
             }
         }

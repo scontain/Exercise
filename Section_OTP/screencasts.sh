@@ -1,14 +1,20 @@
+#!/bin/bash
 
-cat > stream.sh <<EOF
-while IFS='\n' read -r line
-do
-  echo "\$line"
-  sleep 20
+while IFS='' read -r line || [[ -n "$line" ]]; do
+    sleep 20
+    foo=$line
+    for (( i=0; i<${#foo}; i++ )); do
+        echo -n "${foo:$i:1}"
+        sleep 0.05
+    done
+    echo
+    sleep 10
+
 done
 EOF
 chmod a+x stream.sh
 
-cat > screencast.txt  <<EOF
+echo '
 # Screencast for OTP assignments
 # let us change directory to the reference solution
 cd Section_OTP/otp_policies
@@ -24,7 +30,7 @@ cargo install rust-script
 
 ./otp_policy.rs help
 
-# Let's get more info about command create
+# Let us get more info about command create
 
 ./otp_policy.rs create --help
 
@@ -32,7 +38,7 @@ cargo install rust-script
 
 ./otp_policy.rs create
 
-# Ok, no error messages. Let's see what changed.
+# Ok, no error messages. Let us see what changed.
 
 ls -l
 
@@ -62,7 +68,7 @@ scone session read $(cat state.js | jq -r .session2)
 
 # Ok there is some use of OTPs in session2.
 
-# Let's look at the help for generating the QR first:
+# Let us look at the help for generating the QR first:
 
 ./otp_policy.rs gen-qr-code  --help
 
@@ -115,7 +121,7 @@ diff state.js state.old
 # Which is true.
 
 exit
-EOF
-
+' > screencast.txt
+rm -rf state.js state.old single_run qr.output qrcode.svg screencast_wrong.txt
 cd ..
 cat Section_OTP/screencast.txt | Section_OTP/stream.sh |  asciinema rec -t "Section OTP Assignments" -i 1 -y

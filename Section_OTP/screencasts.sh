@@ -1,19 +1,5 @@
 #!/bin/bash
 
-while IFS='' read -r line || [[ -n "$line" ]]; do
-    sleep 20
-    foo=$line
-    for (( i=0; i<${#foo}; i++ )); do
-        echo -n "${foo:$i:1}"
-        sleep 0.05
-    done
-    echo
-    sleep 10
-
-done
-EOF
-chmod a+x stream.sh
-
 echo '
 # Screencast for OTP assignments
 # let us change directory to the reference solution
@@ -50,7 +36,8 @@ ls single_run
 
 cat state.js
 
-# Ok there are all information in the clear text. We should protect this even when running on a trusted computer
+# Ok there are all information in the clear text. We should protect this
+# even when running on a trusted computer!
 # We do this in a later assignment
 
 # Let us look at the namespace session first
@@ -62,11 +49,6 @@ scone session read $(cat state.js | jq -r .namespace)
 scone session read $(cat state.js | jq -r .session)
 
 # Ok - there is no use of OTPs in this session.
-# Let us look at session two:
-
-scone session read $(cat state.js | jq -r .session2)
-
-# Ok there is some use of OTPs in session2.
 
 # Let us look at the help for generating the QR first:
 
@@ -88,10 +70,10 @@ shred -n 3 -z -u qrcode.svg
 
 ./otp_policy.rs gen-qr-code
 
-# Ok this fails as expected!
 # We can generate a new QR code by providing a valid OTP
 
-# Let us generate an OTP ... using a simple script and a secret from the unencrypted state.js
+# Let us generate an OTP ... using a simple script and a secret from
+# the unencrypted state.js
 
 ./print_otp.rs $(cat state.js | jq -r .secret)
 
@@ -118,10 +100,70 @@ diff state.js state.old
 
 ./otp_policy.rs gen-qr-code
 
-# Which is true.
+# and indeed, it failed.
+
+# Ok this fails as expected!
+# Let us look at the files in single_run:
+
+ls -l single_run/
+
+# Let us removed file "once" and reexecute:
+
+rm -f single_run/once
+./otp_policy.rs gen-qr-code
+
+# This fails since "once" is missing.
+# Let us also remove file "volume.fspf" that contains the protection data!
+
+rm -f single_run/once single_run/volume.fspf
+./otp_policy.rs gen-qr-code
+
+# Ok this fails since file system protection file was removed
+
+# Let us try a rollback attack. To do so, we reinitialize this:
+
+./otp_policy.rs roll-forward --force
+
+ls -l single_run
+
+# Ok, there is no metadata file yet in "single_run"
+# We added a command that creates a file in the directory
+
+./otp_policy.rs test-qr-code
+ls -l single_run
+
+# Ok we have a test and the metadata file
+# lets copy this
+
+cp -r single_run/ rollback
+
+# let us generate a QR code
+
+./otp_policy.rs gen-qr-code
+
+# ok that worked. It generated the files:
+
+ls -l single_run
+
+# let us remove the whole directory
+
+rm -rf single_run/
+
+# Let us do a rollback
+
+mv rollback single_run
+
+# Now we are at state before we generated the QR code
+# Let us try again to generate the QR code
+
+./otp_policy.rs gen-qr-code
+
+
+# OK, SCONE aborts with "the supplied tag is not fresh - suspected replay attack"
+# Which is exactly what happened! Well done SCONE!
 
 exit
 ' > screencast.txt
-rm -rf state.js state.old single_run qr.output qrcode.svg screencast_wrong.txt
+rm -rf otp_policies/state.js otp_policies/state.old otp_policies/single_run otp_policies/qr.output otp_policies/qrcode.svg otp_policies/screencast_wrong.txt otp_policies/test.svg
 cd ..
 cat Section_OTP/screencast.txt | Section_OTP/stream.sh |  asciinema rec -t "Section OTP Assignments" -i 1 -y

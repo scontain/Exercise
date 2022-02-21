@@ -95,6 +95,13 @@ enum Commands {
         verbose: Verbosity<ErrorLevel>,
     },
 
+
+    #[structopt(about = "Gen Test QR Code - this cannot be used for add authenticator!")]
+    TestQRCode {
+        #[clap(flatten)]
+        verbose: Verbosity<ErrorLevel>,
+    },
+
     #[structopt(about = "Add a new authenticator. This asks you for the current OTP.")]
     AddAuthenticator {
         #[clap(long)]
@@ -127,6 +134,7 @@ fn main() {
         Commands::Create{ force, verbose } => { init_logger(verbose); create_command(force) },
         Commands::AddAuthenticator{ ootp, verbose } => { init_logger(verbose); add_authenticator(ootp) },
         Commands::GenQRCode{ verbose } => { init_logger(verbose); gen_qr_code() },
+        Commands::TestQRCode{ verbose } => { init_logger(verbose); test_qr_code() },
         Commands::RollForward{ force, verbose } => { init_logger(verbose); roll_forward(force) },
     }
 }
@@ -139,7 +147,6 @@ fn roll_forward(force: bool) {
 // create a new secret
     let secret : [u8 ; 32] = rand::random();
     state.secret = BASE32_NOPAD.encode(&secret).into();
-    state.volume_version += 1;
     info!("{:?}", state);
     write_state(&state, "state.js");
 
@@ -164,6 +171,19 @@ fn gen_qr_code() {
     }
 }
 
+
+fn test_qr_code() {
+    let state : State = read_state("state.js");
+
+// run as docker command
+    let (code, stdout, stderr) = sh!(r#"docker run --rm -w "/root" -v "$PWD:/root" -e SCONE_CAS_ADDR=scone-cas.cf -e SCONE_CONFIG_ID={}/test {} {} > qr.output"#, state.session, state.otp_image, state.otp_binary);
+    info!("Command: {}\nCode: {}\n{}\n", state.otp_binary, code, stdout);
+    if code != 0 {
+        error!("ERROR: executing 'test-QR-code'. Code: {}\nError output:\n{}", code, stderr);
+    } else {
+        println!("Written test QR code to file test.svg.\n- This cannot be used for authorization.\n")
+    }
+}
 fn create_command(force: bool) {
     // template for define OTP secret
     let session_template = r#"
@@ -192,6 +212,15 @@ services:
         OTP_ACCOUNT_LOGIN: "{{scone_user}}"
         OTP_SECRET: $$SCONE::otp_secret$$
         OTP_OUTPUT_FILE: "/root/qrcode.svg"
+      pwd: "/root"
+    - name: test
+      image_name: otpqr_image
+      environment:
+        OTP_SINGLE_USE: "/root/single_run/test"
+        OTP_ACCOUNT_NAME: "otp_test_account"
+        OTP_ACCOUNT_LOGIN: "otp_test_user"
+        OTP_SECRET: test
+        OTP_OUTPUT_FILE: "/root/test.svg"
       pwd: "/root"
 
 security:

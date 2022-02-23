@@ -8,7 +8,7 @@ use rand::{thread_rng, Rng};
 use rand::distributions::Alphanumeric;
 use std::fs;
 
-pub fn execute_with_docker(shell: &str, cmd: &String) -> (i32, String, String) {
+pub fn execute_with_docker(shell: &str, cmd: &str) -> (i32, String, String) {
     let w_prefix = &format!(r#"docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$HOME/.docker:/root/.docker" -v "$HOME/.cas:/root/.cas" -v "$HOME/.scone:/root/.scone" -v "$PWD:/root"     -w /root     registry.scontain.com:5050/sconecuratedimages/sconecli {}"#, cmd);
     let mut command = {
         let mut command = ::std::process::Command::new(shell);
@@ -37,10 +37,10 @@ macro_rules! scone {
 }
 
 
-pub fn create_session<'a, T : Serialize + for<'de> Deserialize<'de>>(name : &String, hash: &String, template: &str, state : &T, force: bool) -> Result<String, &'static str> {
+pub fn create_session<'a, T : Serialize + for<'de> Deserialize<'de>>(name : &str, hash: &str, template: &str, state : &T, force: bool) -> Result<String, &'static str> {
     // if we already know the hash of the session, we do not try to create
     // unless we set flag force
-    if hash == "" || force {
+    if hash.is_empty() || force {
         info!("Hash for session {} empty. Trying to determine hash.", name);
         // we access the state object via a json "proxy" object  
         // - we can access fields without needing to traits... but more importantly, this enables to create session for different fields
@@ -101,7 +101,7 @@ pub fn create_session<'a, T : Serialize + for<'de> Deserialize<'de>>(name : &Str
         }
         r
     } else {
-        Ok(hash.clone())
+        Ok(hash.to_string())
     }
 }
 
@@ -139,16 +139,16 @@ pub trait Init {
     fn new() -> Self;
 }
 
-pub fn write_state<T: Serialize>(state : &T, filename : &str) -> () {
+pub fn write_state<T: Serialize>(state : &T, filename : &str) {
     let state = serde_json::to_string_pretty(&state).expect("Error serializing internal state");
     info!("writing state {}", state);
-    fs::write(filename, state).expect(&format!("Unable to write file '{}'", filename));
+    fs::write(filename, state).unwrap_or_else(|_| panic!("Unable to write file '{}'", filename));
 }
 
 pub fn read_state<T: Init + for<'de> Deserialize<'de>>(filename : &str) -> T {
     if let Ok(state) = fs::read_to_string(filename) {
         info!("Read state {} from {}", state, filename);
-        let state : T  = serde_json::from_str(&state).expect(&format!("Cannot deserialize '{}'", filename));
+        let state : T  = serde_json::from_str(&state).unwrap_or_else(|_| panic!("Cannot deserialize '{}'", filename));
         state
     } else {
         info!("Failed to read state from file {}: creating this file now.", filename);

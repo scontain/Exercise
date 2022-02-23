@@ -19,7 +19,7 @@ fn print_qr() -> Result<(), String> {
     let secret = get_env("OTP_SECRET")?;
     let filename = get_env("OTP_OUTPUT_FILE")?;
     // if no reset, we need to check if file exists
-    if let Err(_) = env::var("OTP_RESET") {
+    if env::var("OTP_RESET").is_err() {
         match File::open(&file_name) {
             Err(_why) => (),
             Ok(_) => return Err(format!("OTP_SINGLE_USE (={}) already exists!", file_name)),

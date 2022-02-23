@@ -2,7 +2,7 @@
 //!
 //! ```cargo
 //! [package]
-//! name = "otpqr"
+//! name = "print-otp"
 //! version = "0.1.0"
 //! edition = "2021"
 //!

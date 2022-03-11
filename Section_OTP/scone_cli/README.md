@@ -28,3 +28,18 @@ This crate implements the following functions and macros:
 
 Soon, we will add more functions to address other recurring tasks.
 
+## Commands
+
+- **gen_template**:
+  - 
+  - generate default template - modify this if needed
+- **create_policy**: generate
+- **AddAuthenticator**:
+- **GenQRCode**:
+
+
+- Commands::Create{ force, verbose } => { init_logger(verbose); create_command(force) },
+  Commands::AddAuthenticator{ ootp, verbose } => { init_logger(verbose); add_authenticator(ootp) },
+  Commands::GenQRCode{ verbose } => { init_logger(verbose); gen_qr_code() },
+  Commands::TestQRCode{ verbose } => { init_logger(verbose); test_qr_code() },
+  Commands::RollForward{ force, verbose } => { init_logger(verbose); roll_forward(force) },

@@ -1,0 +1,13 @@
+state.js
+tmp_*
+single_run
+qr.output
+cosign_keys
+.cas
+.docker
+.scone
+cosign
+*.yml
+qrcode.svg
+add
+git

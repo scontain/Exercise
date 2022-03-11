@@ -1,0 +1,10 @@
+FROM registry.scontain.com:5050/matteus/review:golang-1.17.6-bullseye-experimental AS builder
+
+RUN  git clone https://github.com/sigstore/cosign \
+&&  cd cosign \
+&& go install ./cmd/cosign \
+&& scone-signer sign --sconify --syslibs=1 $(go env GOPATH)/bin/cosign \
+&& $(go env GOPATH)/bin/cosign
+
+CMD ["/go/bin/cosign"]
+

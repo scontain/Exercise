@@ -7,6 +7,8 @@ use std::fs::OpenOptions;
 use rand::{thread_rng, Rng};
 use rand::distributions::Alphanumeric;
 use std::fs;
+use std::io;
+use std::io::Write;
 
 pub fn execute_with_docker(shell: &str, cmd: &str) -> (i32, String, String) {
     let w_prefix = &format!(r#"docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$HOME/.docker:/root/.docker" -v "$HOME/.cas:/root/.cas" -v "$HOME/.scone:/root/.scone" -v "$PWD:/root"     -w /root     registry.scontain.com:5050/sconecuratedimages/sconecli {}"#, cmd);
@@ -83,8 +85,8 @@ pub fn create_session<'a, T : Serialize + for<'de> Deserialize<'de>>(name : &str
             let (code, _stdout, stderr) = scone!("scone session check {}", &filename);
             if code != 0 {
                 error!("Session {}: description in '{}' contains errors: {}", &filename, name, stderr);
-                let _ = fs::remove_file(&filename);
-                return Err("Session template seems to be incorrect");
+                // let _ = fs::remove_file(&filename);
+                return Err("Session template seems to be incorrect - have a look at file.");
             }
             info!("Session template for {}: is correct.", name);
 
@@ -163,4 +165,26 @@ pub fn random_name(len : usize) -> String {
         .map(char::from)
         .collect();
     rand_string
+}
+
+
+pub fn get_otp(otp: Option<String>) -> String {
+    if let Some(otp) = otp {
+        otp
+    } else {
+        let prompt = r#"
+        Adding a new authenticate requires an OTP from an existing authenticator.
+            - The new QR code is written to file 'qrcode.svg'
+            - Starting containers can take some while. Hence, wait for a new QR code to appear on your authenticator.
+        Type OTP and press enter: "#;
+
+        print!("{}", prompt);
+
+        // get OTP from user
+        io::stdout().flush().unwrap();
+        let mut otp = String::new();
+        io::stdin().read_line(&mut otp).expect("Error getting OTP");
+        otp.retain(|c| !c.is_whitespace());
+        otp
+    }
 }

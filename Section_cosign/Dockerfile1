@@ -1,0 +1,33 @@
+FROM registry.scontain.com:5050/matteus/review:golang-1.17.6-bullseye-experimental AS builder
+
+RUN  git clone https://github.com/sigstore/cosign \
+&&  cd cosign \
+&& go install ./cmd/cosign \
+&& scone-signer sign --sconify --syslibs=1 $(go env GOPATH)/bin/cosign \
+&& $(go env GOPATH)/bin/cosign
+
+
+FROM debian:bullseye-slim
+
+COPY --from=0 /opt/scone/lib/ld-scone-x86_64.so.1 /lib64/ld-linux-x86-64.so.2
+COPY --from=0 /go/bin/cosign /go/bin/cosign
+COPY --from=0 /etc/sgx-musl.conf /etc/sgx-musl.conf
+COPY --from=0 /lib/x86_64-linux-gnu/libpthread.so.0 /lib/x86_64-linux-gnu/libpthread.so.0
+COPY --from=0 /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/libc.so.6
+COPY --from=0 /lib64/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
+COPY --from=0 /opt/scone/lib/libc.scone-x86_64.so.1 /opt/scone/lib/libc.scone-x86_64.so.1
+COPY --from=0 /opt/scone/lib/ld-scone-x86_64.so.1 /opt/scone/lib/ld-scone-x86_64.so.1
+
+ENV GOFLAGS="-buildmode: pie"
+ENV HOSTNAME=3e458b1a100f
+ENV SCONE_ALLOW_DLOPEN=0
+ENV SCONE_HEAP=1G
+ENV PWD=/root
+ENV SCONE_SYSLIBS=1
+ENV HOME=/root
+ENV GOLANG_VERSION=1.17.6
+ENV TERM=xterm
+ENV SHLVL=1
+
+CMD /go/bin/cosign
+
